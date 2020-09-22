@@ -1,5 +1,5 @@
 # A Real-time Vision Framework for Pedestrian Behavior Recognition and Intention Prediction at Intersections Using 3D Pose Estimation
-[![report](https://img.shields.io/badge/arxiv-report-red)](https://arxiv.org/abs/1912.05656)[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1dFfwxZ52MN86FA6uFNypMEdFShd2euQA)
+[![report](https://img.shields.io/badge/arxiv-report-red)](https://arxiv.org/abs/2009.xxxxx)
 
 We propose a real-time (> 30 FPS) vision framework for two central tasks in intelligent transportation systems:
 - Pedestrian Behavior Recognition
@@ -23,7 +23,7 @@ Our project includes the following software packages
 - Feature (V2P & environmental contexts) extractor
 - Trainer and tester for intention prediction (+ raw data)
 
-> [**A Real-time Vision Framework for Pedestrian Behavior Recognition and Intention Prediction at Intersections Using 3D Pose Estimation**](https://arxiv.org/abs/1912.05656),            
+> [**A Real-time Vision Framework for Pedestrian Behavior Recognition and Intention Prediction at Intersections Using 3D Pose Estimation**](https://arxiv.org/abs/2009.xxxxx),            
 > [Ue-Hwan Kim](https://github.com/Uehwan), [Dongho Ka](https://stslabblog.wordpress.com/people/), [Hwasoo Yea](https://stslabblog.wordpress.com/people/), [Jong-Hwan Kim](http://rit.kaist.ac.kr/home/jhkim/Biography_en),        
 > *IEEE Transactions on Intelligent Transportation Systems, Under Review, 2020* 
 
