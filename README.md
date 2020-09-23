@@ -18,10 +18,10 @@ Receiving a sequence of image frames, the proposed framework 1) extracts both 3D
 </p>
 
 Our project includes the following software packages
-- Multi-object tracker
-- Human pose analyzer (projection of 3D pose to 2D imaging planes)
-- Feature (V2P & environmental contexts) extractor
-- Trainer and tester for intention prediction (+ raw data)
+- [Multi-object tracker](multi_object_tracker/mot.py)
+- [Human pose analyzer (projection of 3D pose to 2D imaging planes)](demo_2d_3d_joints.py)
+- [Feature (V2P & environmental contexts) extractor](demo_feature_extraction.py)
+- [Trainer and tester for intention prediction](intention_prediction/main.py) [(+ raw data)](intention_prediction/data_raw)
 
 > [**A Real-time Vision Framework for Pedestrian Behavior Recognition and Intention Prediction at Intersections Using 3D Pose Estimation**](https://arxiv.org/abs/2009.xxxxx),            
 > [Ue-Hwan Kim](https://github.com/Uehwan), [Dongho Ka](https://stslabblog.wordpress.com/people/), [Hwasoo Yea](https://stslabblog.wordpress.com/people/), [Jong-Hwan Kim](http://rit.kaist.ac.kr/home/jhkim/Biography_en),        
@@ -47,7 +47,7 @@ source scripts/install_conda.sh
 
 ## Running the Demos
 
-### 3D and 2D Pose Estimation
+### 3D and 2D Pose Estimation: Behavior Analysis
 Simply run the following:
 ```bash
 python demo_2d_3d_joints.py
@@ -64,7 +64,7 @@ Before you extract features for intention prediction, you need to label crosswal
 ```bash
 python demo_label_crosswalk.py --root_dir PATH_TO_ROOT
 ```
-The root dir should look like this (this is to support labeling of multiple videos at once)
+The root dir should look like this (this is to support labeling of multiple videos at once; for video to images refer to [this](demo_feature_extraction.py))
 ```bash
 |---- ROOT_DIR
 |     |----folder_1
@@ -109,7 +109,7 @@ python main.py \
     --num_output 1 \
     --context_length 0.5
 ```
-You can run the following to reproduce the results reported in our manuscript.
+You can run the following to retrieve the evaluation results reported in our manuscript.
 ```bash
 python plot_results.py
 ```
