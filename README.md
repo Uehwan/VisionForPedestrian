@@ -1,5 +1,5 @@
 # A Real-time Vision Framework for Pedestrian Behavior Recognition and Intention Prediction at Intersections Using 3D Pose Estimation
-[![report](https://img.shields.io/badge/arxiv-report-red)](https://arxiv.org/abs/2009.xxxxx)
+[![report](https://img.shields.io/badge/arxiv-report-red)](https://arxiv.org/abs/2009.10868)
 
 We propose a real-time (> 30 FPS) vision framework for two central tasks in intelligent transportation systems:
 - Pedestrian Behavior Recognition
@@ -23,7 +23,7 @@ Our project includes the following software packages
 - [Feature (V2P & environmental contexts) extractor](demo_feature_extraction.py)
 - [Trainer and tester for intention prediction](intention_prediction/main.py) [(+ raw data)](intention_prediction/data_raw)
 
-> [**A Real-time Vision Framework for Pedestrian Behavior Recognition and Intention Prediction at Intersections Using 3D Pose Estimation**](https://arxiv.org/abs/2009.xxxxx),            
+> [**A Real-time Vision Framework for Pedestrian Behavior Recognition and Intention Prediction at Intersections Using 3D Pose Estimation**](https://arxiv.org/abs/2009.10868),            
 > [Ue-Hwan Kim](https://github.com/Uehwan), [Dongho Ka](https://stslabblog.wordpress.com/people/), [Hwasoo Yea](https://stslabblog.wordpress.com/people/), [Jong-Hwan Kim](http://rit.kaist.ac.kr/home/jhkim/Biography_en),        
 > *IEEE Transactions on Intelligent Transportation Systems, Under Review, 2020* 
 
@@ -136,7 +136,7 @@ If you find this project helpful, please consider citing this project in your pu
 @inproceedings{kim2020a,
   title={A Real-time Vision Framework for Pedestrian Behavior Recognition and Intention Prediction at Intersections Using 3D Pose Estimation},
   author={Kim Ue-Hwan, Ka Dongho, Yeo Hwasoo, Kim Jong-Hwan},
-  journal = {IEEE Transactions on Intelligent Transportation Systems},
+  journal = {arXiv preprint arXiv:2009.10868},
   year = {2020}
 }
 ```
