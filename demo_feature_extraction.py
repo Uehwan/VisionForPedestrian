@@ -243,7 +243,7 @@ if __name__ == "__main__":
     parser.add_argument('--vid_file', type=str,
                         help='input video path or youtube link')
     parser.add_argument('--vid_id', type=str,
-                        help='input video path or youtube link')    
+                        help='video id to distinguish videos')
     parser.add_argument('--img_height', type=int, default=1080,
                         help='image height (video)')
     parser.add_argument('--img_width', type=int, default=1920,
