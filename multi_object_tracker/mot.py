@@ -210,10 +210,10 @@ class MOT():
         :param trackers (ndarray): tracklets of shape Nx5 [x1,y1,x2,y2,track_id]
         :return: None
         '''
-        print('Displaying results..')
+        print('Saving detection & tracking results..')
 
         save = True if output_folder else False
-        tmp_write_folder = output_folder  # osp.join('/tmp', f'{osp.basename(image_folder)}_mot_results')
+        tmp_write_folder = output_folder
         os.makedirs(tmp_write_folder, exist_ok=True)
 
         colours = np.random.rand(32, 3)
@@ -245,23 +245,10 @@ class MOT():
                 )
                 cv2.putText(img, f'V[{ind_to_class[d[5]]}]: {d[4]}', (d[0] - 9, d[1] - 9), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
                 cv2.putText(img, f'V[{ind_to_class[d[5]]}]: {d[4]}', (d[0] - 8, d[1] - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
-            cv2.putText(img, f'frame number: {idx}', (25, 100), cv2.FONT_HERSHEY_SIMPLEX, 2.0, (255, 255, 255))
-            cv2.imshow('result video', img)
-
-            # time.sleep(0.03)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            cv2.putText(img, f'frame number: {idx+1}', (25, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
 
             if save:
-                cv2.imwrite(osp.join(tmp_write_folder, f'{idx:06d}.jpg'), img)
-
-        cv2.destroyAllWindows()
-        '''
-        if save:
-            print(f'Saving output video to {output_folder}')
-            images_to_video(img_folder=tmp_write_folder, output_vid_file=output_folder)
-            shutil.rmtree(tmp_write_folder)
-        '''
+                cv2.imwrite(osp.join(tmp_write_folder, f'{idx+1:06d}.jpg'), img)
 
     def __call__(self, image_folder, output_folder=None):
         '''

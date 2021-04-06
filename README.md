@@ -60,28 +60,70 @@ python demo_semantic_segmentation.py
 ```
 
 ### Multi-Object Tracking and Feature Extraction
+#### 1. Videos to Images
+First, you need to extract images from video files by running
+```bash
+python demo_video_processing.py --root_dir PATH_TO_ROOT --output_dir PATH_TO_OUTPUT
+```
+
+The root_dir should look like this (this is to support processing of multiple videos at once):
+```bash
+|---- ROOT_DIR
+|     |---- folder_1
+|           |---- video_1.mp4
+|           |---- video_2.mp4
+|           |---- video_3.mp4
+|     |---- folder_2
+|           |---- video_1.mp4
+```
+
+After processing, the output_dir becomes the following structure:
+```bash
+|---- OUTPUT_DIR
+|     |---- folder_1
+|           |---- video_1
+|                 |---- 000001.png
+|                 |---- 000002.png
+|                 |---- 000003.png
+|           |---- video_2
+|                 |---- 000001.png
+|                 |---- 000002.png
+|                 |---- 000003.png
+|           |---- video_3
+|                 |---- 000001.png
+|                 |---- 000002.png
+|                 |---- 000003.png
+|     |---- folder_2
+|           |---- video_1
+|                 |---- 000001.png
+|                 |---- 000002.png
+|                 |---- 000003.png
+```
+
+#### 2. Detectors and Trackers
+Next, you need to run detectors and object trackers.
+Before running detectors and trackers, prepare vibe data by executing
+```bash
+source scripts/prepare_vibe_data.sh
+```
+
+Then,
+```bash
+python demo_detection.py --root_dir PATH_TO_ROOT --output_dir PATH_TO_OUTPUT
+```
+Here, the root_path is same as the output_dir of the previous step (demo_video_processing)
+
+#### 3. Labeling Crosswalks
 Before you extract features for intention prediction, you need to label crosswalk positions by running
 ```bash
 python demo_label_crosswalk.py --root_dir PATH_TO_ROOT
 ```
-The root dir should look like this (this is to support labeling of multiple videos at once; for video to images refer to [this](demo_feature_extraction.py))
-```bash
-|---- ROOT_DIR
-|     |----folder_1
-|          |----image_1.jpg
-|          |----image_2.jpg
-|          |----image_3.jpg
-|     |----folder_2
-|          |----image_1.jpg
-|          |----image_2.jpg
-|          |----image_3.jpg
-```
 
-In addition, to label the entrance of each crosswalk, click two ends of each crosswalk sequentially. Then, the script will automatically save the labeling result. For example, click cw1-endpoint1 => cw1-endpoint2 => cw2-endpoint1 => cw2-endpoint2 => cw3-endpoint1 => ...
+To label the entrance of each crosswalk, click two ends of each crosswalk sequentially. Then, the script will automatically save the labeling result. For example, click cw1-endpoint1 => cw1-endpoint2 => cw2-endpoint1 => cw2-endpoint2 => cw3-endpoint1 => ...
 
 (You can run "demo_crosswalk.py" for the automatic crosswalk detection with tensorflow > 2.1, but the performance is not satisfactory)
 
-
+#### 4. Extract Pedestrian and Vehicle Features
 Then, run the below and observe the id-lists of same pedestrians.
 ```bash
 python -i demo_feature_extraction.py \
@@ -147,7 +189,7 @@ This code is available for **non-commercial scientific research purposes**. Thir
 ## Acknowledgments
 We base our project on the following repositories:
 
-- 3D Pose Estimation: [VIBE](https://https://github.com/mkocabas/VIBE)
+- 3D Pose Estimation: [VIBE](https://github.com/mkocabas/VIBE)
 - Multiple People Tracking: [MPT](https://github.com/mkocabas/multi-person-tracker)
 - Object Detecctor: [Yolov3](https://github.com/mkocabas/yolov3-pytorch)
 - Semantic Segmetation: [HRNetV2](https://github.com/CSAILVision/semantic-segmentation-pytorch)

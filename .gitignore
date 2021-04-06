@@ -134,6 +134,8 @@ dmypy.json
 vibe-env/
 output/
 *.mp4
+*.pth
 results/
 vid_to_img/
 vid_to_img_sample/
+data/vibe_data/
