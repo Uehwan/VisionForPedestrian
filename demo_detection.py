@@ -73,16 +73,6 @@ if __name__ == "__main__":
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     bbox_scale = 1.1
 
-    # ========= Define Multi-Object tracker ========= #
-    mot = MOT(
-        device=device,
-        batch_size=12,
-        display=True,
-        detector_type='yolo',
-        output_format='dict',
-        yolo_img_size=608
-    )
-
     # ========= Define VIBE model ========= #
     model = VIBE_Demo(
         seqlen=16,
@@ -109,7 +99,17 @@ if __name__ == "__main__":
             output_folder = os.path.join(
                 args.output_dir, sub_dir, ntpath.basename(image_folder))
             ped_results, frames_ped_veh = {}, {}
-
+            
+            # ========= Define Multi-Object tracker ========= #
+            mot = MOT(
+                device=device,
+                batch_size=12,
+                display=True,
+                detector_type='yolo',
+                output_format='dict',
+                yolo_img_size=608
+            )
+            
             ########################Detection and Tracking##########################
             ped, veh = mot(image_folder, output_folder=output_folder)
             
