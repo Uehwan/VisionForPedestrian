@@ -1,4 +1,7 @@
+import os
+import glob
 import pickle
+import argparse
 import numpy as np
 import pandas as pd
 
@@ -6,7 +9,27 @@ import torch
 
 from lib.models.spin import perspective_projection
 
-from demo_on_single_images import angle_between
+
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+
+def angle_between(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    angle = np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
+    angle = 360 - angle if v1[1] < 0 else angle
+    return angle
 
 
 def most_frequent(list_of_elements):
@@ -174,30 +197,41 @@ def save_csv(ped_to_analyze, ped_results):
 
 
 def update_all_and_save(list_of_list):
-        for l in list_of_list:
-            update_dicts(l, ped_results, frames_ped_veh, height_factor=1.7, treat_cam=True)
-        for v in veh.keys():
-            update_dicts([v], veh, frames_ped_veh, height_factor=1.5, norm_factor=10, treat_cam=False)
-        extract_v2p_and_env([l[0] for l in list_of_list], ped_results)
-        save_csv([l[0] for l in list_of_list], ped_results)
+    for l in list_of_list:
+        update_dicts(l, ped_results, frames_ped_veh, height_factor=1.7, treat_cam=True)
+    for v in veh.keys():
+        update_dicts([v], veh, frames_ped_veh, height_factor=1.5, norm_factor=10, treat_cam=False)
+    extract_v2p_and_env([l[0] for l in list_of_list], ped_results)
+    save_csv([l[0] for l in list_of_list], ped_results)
 
 
 if __name__ == "__main__":
-    with open('anno_crosswalk.pickle', 'rb') as pickle_file:
-        crosswalk_positions = pickle.load(pickle_file)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--root_dir', type=str,
+                        help='root folder containing images from videos')
+    parser.add_argument('--output_dir', type=str,
+                        help='output folder to save detection/tracking results')
+    args = parser.parse_args()
     
-    crosswalk_features = {}
-    for vid_id in crosswalk_positions.keys():
-        cw_feat = []
-        cw_pos = crosswalk_positions[vid_id]
-        for i in range(0, len(cw_pos), 2):
-            center = np.array([cw_pos[i][0]+cw_pos[i+1][0], cw_pos[i][1]+cw_pos[i+1][1]])
-            direct = np.array([cw_pos[i][0]-cw_pos[i+1][0], cw_pos[i][1]-cw_pos[i+1][1]])
-            cw_feat.append((center, direct))
-        crosswalk_features[vid_id] = cw_feat
-    
-    with open('filename.pickle', 'rb') as handle:
-        b = pickle.load(handle)
+    cw_pos = ((100, 719), (900, 600))
+    center = np.array([cw_pos[0][0]+cw_pos[1][0], cw_pos[0][1]+cw_pos[1][1]])
+    direct = np.array([cw_pos[0][0]-cw_pos[1][0], cw_pos[0][1]-cw_pos[1][1]])
+    crosswalk_features = (center, direct)
+
+    # ========= Start Feature Extraction ========= #
+    sub_dirs = os.listdir(args.root_dir)
+    for sub_dir in sub_dirs:
+        if not os.path.isdir(os.path.join(args.root_dir, sub_dir)):
+            continue
+        video_dirs = glob.glob(os.path.join(args.root_dir, sub_dir, '*/'))
+        for video_dir in video_dirs:
+            filename = os.path.join(video_dir, 'detection.pickle')
+            with open(filename, 'rb') as handle:
+                detections = pickle.load(handle)
+            base_name = video_dir.split('/')[-2]
+            annotation_pedest = pd.read_excel(os.path.join('data_annotation', base_name + '_pedestrian.xlsx'))
+            annotation_signal = pd.read_excel(os.path.join('data_annotation', base_name + '_signal.xlsx'))
+            import pdb; pdb.set_trace()
 
     '''
     update_all_and_save([[1, 20, 25], [2, 23]])
