@@ -123,7 +123,14 @@ To label the entrance of each crosswalk, click two ends of each crosswalk sequen
 
 (You can run "demo_crosswalk.py" for the automatic crosswalk detection with tensorflow > 2.1, but the performance is not satisfactory)
 
-#### 4. Extract Pedestrian and Vehicle Features
+If you're working on a single scene, you can simply insert the crosswalk position in the [demo_feature_extraction.py](demo_feature_extraction.py) file
+
+#### 4. Identifying Same Pedestrians and Labeling Signal Phase
+Since the object detector and tracker are not perfect, you need to label the same object ids.
+
+
+
+#### 5. Extract Pedestrian and Vehicle Features
 Then, run the below and observe the id-lists of same pedestrians.
 ```bash
 python -i demo_feature_extraction.py \

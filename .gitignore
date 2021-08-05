@@ -141,3 +141,4 @@ vid_to_img_sample/
 data/vibe_data/
 data_annotation
 data_pickle
+data_raw

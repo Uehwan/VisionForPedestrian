@@ -10,6 +10,13 @@ import torch
 from lib.models.spin import perspective_projection
 
 
+SIGNAL_TO_CODE = {
+    'Red': 0,
+    'Green': 1,
+    'Flashing Green': 0.75
+}
+
+
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
     return vector / np.linalg.norm(vector)
@@ -39,6 +46,21 @@ def most_frequent(list_of_elements):
 
 
 def project_3d_to_2d(joints_3d, bbox, pred_cam):
+    # exrtaction of body orientation
+    joints_3d_shoulder_left  = joints_3d[5]
+    joints_3d_shoulder_right = joints_3d[2]
+    joints_3d_hip_middle     = joints_3d[8]
+    
+    joints_3d_body_center = (
+        joints_3d_shoulder_left + joints_3d_shoulder_right + joints_3d_hip_middle
+    ) / 3
+    joints_3d_body_orientation = joints_3d_body_center - np.cross(
+        (joints_3d_shoulder_left - joints_3d_hip_middle),
+        (joints_3d_shoulder_right - joints_3d_hip_middle)
+    ).reshape(1, 3)
+    joints_3d = np.vstack((joints_3d, joints_3d_body_center, joints_3d_body_orientation))
+
+    # project the 3d joints to the 2d space
     joints_3d_tensor = torch.from_numpy(joints_3d).unsqueeze(0)
     focal_length = 5000
     camera_center = torch.zeros(2).unsqueeze(0)
@@ -60,6 +82,11 @@ def project_3d_to_2d(joints_3d, bbox, pred_cam):
         focal_length,
         camera_center
     ).squeeze().numpy()
+
+    # extraction of head orientation
+    mid_front = (joints_2d[15:16] + joints_2d[16:17]) / 2  # (L_eye + R_eye) / 2
+    mid_back  = (joints_2d[42:43] + joints_2d[43:44]) / 2  # (Jaw + Head) / 2
+    joints_2d = np.vstack((joints_2d, mid_front, mid_back))
 
     # scale back to the original image
     scaled_joints_2d = joints_2d * bbox[2:] / 224 + bbox[:2]
@@ -89,9 +116,10 @@ def find_min_dist_and_angle_veh(bb, dr, veh_feats, norm_factor=10):
     return dist_min, angle_min, speed_min
 
 
-def extract_v2p_and_env(ped_to_analyze, ped_results):
+def extract_v2p_and_env(ped_to_analyze, ped_results, veh, frames_ped_veh, semantics, signals):
     for ped_id in ped_to_analyze:
-        num_group, d_veh, a_veh, s_veh, d_cw, a_cw, sem = [], [], [], [], [], [], []
+        num_group, d_veh, a_veh, s_veh, d_cw, a_cw, sem, sig, cros, head, body, head_o, body_o \
+            = [], [], [], [], [], [], [], [], [], [], [], [], []
         for fr, bb, jo, pc, dr in zip(
             ped_results[ped_id]['frames'],
             ped_results[ped_id]['bboxes'],
@@ -120,23 +148,53 @@ def extract_v2p_and_env(ped_to_analyze, ped_results):
             s_veh.append(speed_min)
 
             # crosswalk context: distance & angle
-            dist_min, angle_min = find_min_dist_and_angle(bb, dr, crosswalk_features[video_id])
+            dist_min, angle_min = find_min_dist_and_angle(bb, dr, crosswalk_features)
             d_cw.append(dist_min)
             a_cw.append(angle_min)
             
+            # get 2d joints from 3d joints
+            joints_2d = project_3d_to_2d(jo, bb, pc)
+            head_o.append(unit_vector(joints_2d[51] - joints_2d[52]))
+            body_o.append(unit_vector(joints_2d[49] - joints_2d[50]))
+            head.append(joints_2d[51])
+            body.append(joints_2d[49])
+            # x_start, y_start = joints_2d[51]  # head
+            # x_start, y_start = joints_2d[49]  # body
+
             # location context: semantic label of the current position
-            heel_l_r = project_3d_to_2d(jo, bb, pc)[[21, 24]]  # left and right heel
+            heel_l_r = joints_2d[[21, 24]]  # left and right heel
             sem_ped = [
                 semantics[heel_l_r[k][1]+i, heel_l_r[k][0]+j] for i in range(-1, 2) for j in range(-1, 2) for k in range(2) if 0<=heel_l_r[k][1]+i<IMG_HEIGHT and 0<=heel_l_r[k][0]+j<IMG_WIDTH
             ]
             sem.append(most_frequent(sem_ped))
-        ped_results[ped_id]['num_group'] = np.array(num_group)
-        ped_results[ped_id]['v2p_dist'] = np.array(d_veh)
-        ped_results[ped_id]['v2p_angle'] = np.array(a_veh)
-        ped_results[ped_id]['v2p_speed'] = np.array(s_veh)
-        ped_results[ped_id]['env_loc'] = np.array(sem)
-        ped_results[ped_id]['env_cw_dist'] = np.array(d_cw)
+
+            # environment signal
+            for sss in signals:
+                if sss[0] > fr:
+                    break
+            sig.append(SIGNAL_TO_CODE[sss[1]])
+
+            # crossing
+            # (3/20) * x + y - 1250 > 0
+            # (3/2 ) * x - y - 750  > 0
+            if (bb[0] * 3 / 20 + bb[1] - 1250 > 0) and (bb[0] * 3 / 2 - bb[0] - 750 > 0):
+                cros.append(1)  # crossing
+            else:
+                cros.append(0)  # not crossing
+
+        ped_results[ped_id]['head']         = np.array(head)
+        ped_results[ped_id]['body']         = np.array(body)
+        ped_results[ped_id]['head_ori']     = np.array(head_o)
+        ped_results[ped_id]['body_ori']     = np.array(body_o)
+        ped_results[ped_id]['num_group']    = np.array(num_group)
+        ped_results[ped_id]['v2p_dist']     = np.array(d_veh)
+        ped_results[ped_id]['v2p_angle']    = np.array(a_veh)
+        ped_results[ped_id]['v2p_speed']    = np.array(s_veh)
+        ped_results[ped_id]['env_loc']      = np.array(sem)
+        ped_results[ped_id]['env_cw_dist']  = np.array(d_cw)
         ped_results[ped_id]['env_cw_angle'] = np.array(a_cw)
+        ped_results[ped_id]['env_signal']   = np.array(sig)
+        ped_results[ped_id]['crossing']     = np.array(cros)
 
 
 def update_dicts(list_of_same_ids, detection_results, frames_ped_veh, height_factor=1.7, norm_factor=5, treat_cam=True):
@@ -144,14 +202,21 @@ def update_dicts(list_of_same_ids, detection_results, frames_ped_veh, height_fac
     if treat_cam:
         keys_to_deal.append('pred_cam')
     ref_id = list_of_same_ids[0]
+
+    if ref_id not in detection_results:
+        return ref_id
+
+    # below for loop does not get executed
+    # if len(list_of_same_ids) == 1:
     for one_id in list_of_same_ids[1:]:
-        for one_frame in detection_results[one_id]['frames']:
-            frames_ped_veh[one_frame]['ped_id'].add(ref_id)
-            frames_ped_veh[one_frame]['ped_id'].remove(one_id)
-        for one_key in keys_to_deal:
-            detection_results[ref_id][one_key] = np.concatenate((
-                detection_results[ref_id][one_key], detection_results[one_id][one_key]))
-        del detection_results[one_id]
+        if one_id in detection_results:
+            for one_frame in detection_results[one_id]['frames']:
+                frames_ped_veh[one_frame]['ped_id'].add(ref_id)
+                frames_ped_veh[one_frame]['ped_id'].remove(one_id)
+            for one_key in keys_to_deal:
+                detection_results[ref_id][one_key] = np.concatenate((
+                    detection_results[ref_id][one_key], detection_results[one_id][one_key]))
+            del detection_results[one_id]
     
     speed, direction = [], []
     fr_prev, bbox_prev = detection_results[ref_id]['frames'][0], detection_results[ref_id]['bboxes'][0]
@@ -164,6 +229,7 @@ def update_dicts(list_of_same_ids, detection_results, frames_ped_veh, height_fac
         fr_prev, bbox_prev = fr, bbox
     detection_results[ref_id]['speed'] = np.array(speed)
     detection_results[ref_id]['direction'] = np.array(direction)
+    return -1
 
 
 def save_csv(ped_to_analyze, ped_results):
@@ -185,24 +251,37 @@ def save_csv(ped_to_analyze, ped_results):
         e_dist    = pd.DataFrame(ped_results[ped_id]['env_cw_dist'])
         e_angle   = pd.DataFrame(ped_results[ped_id]['env_cw_angle'])
         e_loc     = pd.DataFrame(ped_results[ped_id]['env_loc'])
+        e_signal  = pd.DataFrame(ped_results[ped_id]['env_signal'])
+
+        crossing  = pd.DataFrame(ped_results[ped_id]['crossing'])
+
         result = pd.concat([
             v_id, p_id, frames,
             pose_feat, n_group, p_speed,
             v_dist, v_angle, v_speed,
-            e_dist, e_angle, e_loc], axis=1)
+            e_dist, e_angle, e_loc,
+            e_signal, crossing], axis=1)
         result.columns = ['video', 'ped_id', 'frame'] + \
             ['pose_{}_{}'.format(num, ax) for num in range(14) for ax in ['x', 'y', 'z']] + \
-            ['n_group', 'p_speed', 'v_dist', 'v_angle', 'v_speed', 'e_dist', 'e_angle', 'e_loc']
+            ['n_group', 'p_speed', 'v_dist', 'v_angle', 'v_speed', 'e_dist', 'e_angle', 'e_loc', 'e_signal', 'crossing']
         result.to_csv('V{}_P{}.csv'.format(video_id, ped_id))
 
 
-def update_all_and_save(list_of_list):
+def update_all_and_save(list_of_list, detections, signals):
+    ped_results    = detections['ped_results']
+    veh            = detections['veh']
+    frames_ped_veh = detections['frames_ped_veh']
+    semantics      = detections['semantics']
+    
+    failed_ped, failed_veh = [], []
     for l in list_of_list:
-        update_dicts(l, ped_results, frames_ped_veh, height_factor=1.7, treat_cam=True)
+        success = update_dicts(l, ped_results, frames_ped_veh, height_factor=1.7, treat_cam=True)
+        if success > -1:
+            failed_ped.append(success)
     for v in veh.keys():
         update_dicts([v], veh, frames_ped_veh, height_factor=1.5, norm_factor=10, treat_cam=False)
-    extract_v2p_and_env([l[0] for l in list_of_list], ped_results)
-    save_csv([l[0] for l in list_of_list], ped_results)
+    extract_v2p_and_env([l[0] for l in list_of_list if l[0] not in failed_ped], ped_results, veh, frames_ped_veh, semantics, signals)
+    save_csv([l[0] for l in list_of_list if l[0] not in failed_ped], ped_results)
 
 
 if __name__ == "__main__":
@@ -213,10 +292,16 @@ if __name__ == "__main__":
                         help='output folder to save detection/tracking results')
     args = parser.parse_args()
     
+    ############################################################
+    ###################### CUSTOM VALUES #######################
+    ############################################################
+    IMG_HEIGHT, IMG_WIDTH = 720, 1280
     cw_pos = ((100, 719), (900, 600))
+    ############################################################
+
     center = np.array([cw_pos[0][0]+cw_pos[1][0], cw_pos[0][1]+cw_pos[1][1]])
     direct = np.array([cw_pos[0][0]-cw_pos[1][0], cw_pos[0][1]-cw_pos[1][1]])
-    crosswalk_features = (center, direct)
+    crosswalk_features = [(center, direct)]
 
     # ========= Start Feature Extraction ========= #
     sub_dirs = os.listdir(args.root_dir)
@@ -231,8 +316,14 @@ if __name__ == "__main__":
             base_name = video_dir.split('/')[-2]
             annotation_pedest = pd.read_excel(os.path.join('data_annotation', base_name + '_pedestrian.xlsx'))
             annotation_signal = pd.read_excel(os.path.join('data_annotation', base_name + '_signal.xlsx'))
-            import pdb; pdb.set_trace()
+            
+            signals = []
+            for row in annotation_signal.iterrows():
+                signals.append((row[1]['frame'], row[1]['signal_phase']))
+            
+            pedestrian_list = []
+            for row in annotation_pedest.iterrows():
+                temp_list = [int(single) for single in row[1]['p_id_match'].replace('.', ',').split(',') if single is not '']
+                pedestrian_list.append(temp_list)
 
-    '''
-    update_all_and_save([[1, 20, 25], [2, 23]])
-    '''
+            update_all_and_save(pedestrian_list, detections, signals)
