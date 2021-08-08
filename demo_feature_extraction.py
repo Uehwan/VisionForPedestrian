@@ -7,6 +7,8 @@ import pandas as pd
 
 import torch
 
+from tqdm import tqdm
+
 from lib.models.spin import perspective_projection
 
 
@@ -117,7 +119,7 @@ def find_min_dist_and_angle_veh(bb, dr, veh_feats, norm_factor=10):
 
 
 def extract_v2p_and_env(ped_to_analyze, ped_results, veh, frames_ped_veh, semantics, signals):
-    for ped_id in ped_to_analyze:
+    for ped_id in tqdm(ped_to_analyze):
         num_group, d_veh, a_veh, s_veh, c_veh, d_cw, a_cw, sem, sig, cros, head, body, head_o, body_o \
             = [], [], [], [], [], [], [], [], [], [], [], [], [], []
         for fr, bb, jo, pc, dr in zip(
@@ -265,7 +267,7 @@ def update_dicts(list_of_same_ids, detection_results, frames_ped_veh, height_fac
     return -1
 
 
-def save_csv(ped_to_analyze, ped_results, video_name):
+def save_csv(ped_to_analyze, ped_results, base_name):
     # joints_selected = np.array(list(set(range(2, 17)) - {8}))
     for ped_id in ped_to_analyze:
         length_of_frames = len(ped_results[ped_id]['frames'])
@@ -273,8 +275,8 @@ def save_csv(ped_to_analyze, ped_results, video_name):
         # v_id      = pd.DataFrame([video_id] * length_of_frames)
         p_id      = pd.DataFrame([ped_id] * length_of_frames)
         frames    = pd.DataFrame(ped_results[ped_id]['frames'])
-        head_o    = pd.DataFrame(ped_results[ped_id]['head_o'])
-        body_o    = pd.DataFrame(ped_results[ped_id]['body_o'])
+        head_o    = pd.DataFrame(ped_results[ped_id]['head_ori'])
+        body_o    = pd.DataFrame(ped_results[ped_id]['body_ori'])
 
         # pose_feat = pd.DataFrame(ped_results[ped_id]['joints_3d'][:, joints_selected].reshape(-1, 42))
         n_group   = pd.DataFrame(ped_results[ped_id]['num_group'])
@@ -302,10 +304,10 @@ def save_csv(ped_to_analyze, ped_results, video_name):
             ['head_o_x', 'head_o_y', 'body_o_x', 'body_o_y'] + \
             ['n_group', 'p_speed', 'v_dist', 'v_angle', 'v_speed', 'v_check', 'e_dist', 'e_angle', 'e_loc', 'e_signal', 'crossing']
             # ['pose_{}_{}'.format(num, ax) for num in range(14) for ax in ['x', 'y', 'z']] + \
-        result.to_csv('./data_csv/V{}_P{}.csv'.format(video_name, ped_id))
+        result.to_csv('./data_csv/V{}_P{}.csv'.format(base_name, ped_id))
 
 
-def update_all_and_save(list_of_list, detections, signals, video_name):
+def update_all_and_save(list_of_list, detections, signals, base_name):
     ped_results    = detections['ped_results']
     veh            = detections['veh']
     frames_ped_veh = detections['frames_ped_veh']
@@ -319,7 +321,7 @@ def update_all_and_save(list_of_list, detections, signals, video_name):
     for v in veh.keys():
         update_dicts([v], veh, frames_ped_veh, height_factor=1.5, norm_factor=10, treat_cam=False)
     extract_v2p_and_env([l[0] for l in list_of_list if l[0] not in failed_ped], ped_results, veh, frames_ped_veh, semantics, signals)
-    save_csv([l[0] for l in list_of_list if l[0] not in failed_ped], ped_results, video_name)
+    save_csv([l[0] for l in list_of_list if l[0] not in failed_ped], ped_results, base_name)
 
 
 if __name__ == "__main__":
@@ -366,4 +368,4 @@ if __name__ == "__main__":
                 temp_list = [int(single) for single in row[1]['p_id_match'].replace('.', ',').split(',') if single is not '']
                 pedestrian_list.append(temp_list)
 
-            update_all_and_save(pedestrian_list, detections, signals, video_dir)
+            update_all_and_save(pedestrian_list, detections, signals, base_name)
