@@ -46,7 +46,7 @@ def get_args_parser():
                         help="Number of attention heads inside the transformer's attentions")
 
     # dataset parameters
-    parser.add_argument('--data_path', default='./data_raw', type=str,
+    parser.add_argument('--data_path', default='../data_csv', type=str,
                         help="")
     parser.add_argument('--output_dir', default='./result', type=str,
                         help='path where to save, empty for no saving')
@@ -87,26 +87,27 @@ def main(args):
 
     if args.model_type == 'ffnn':
         model = IntentionFFNN(
-            input_size=int(args.context_length * VIDEO_FPS / 2) * (51 if args.state_info else 50),
+            input_size=int(args.context_length * VIDEO_FPS / 2) * (15 if args.state_info else 14),
             hidden_size=args.hidden_size,
             num_output=args.num_output,
             num_layers=args.num_layers)
     elif args.model_type == 'lstm':
         model = IntentionRNN(
-            input_size=51 if args.state_info else 50,
+            input_size=15 if args.state_info else 14,
             hidden_size=args.hidden_size,
             num_output=args.num_output,
             num_layers=args.num_layers,
             rnn_type=args.model_type)
     elif args.model_type == 'gru':
         model = IntentionRNN(
-            input_size=51 if args.state_info else 50,
+            input_size=15 if args.state_info else 14,
             hidden_size=args.hidden_size,
             num_output=args.num_output,
             num_layers=args.num_layers,
             rnn_type=args.model_type)
     else:
         model = IntentionTransformer(
+            input_size=16,
             hidden_size=args.hidden_size,
             num_output=args.num_output,
             num_layers=args.num_layers,

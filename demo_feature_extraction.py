@@ -209,9 +209,9 @@ def extract_v2p_and_env(ped_to_analyze, ped_results, veh, frames_ped_veh, semant
             sig.append(SIGNAL_TO_CODE[sss[1]])
 
             # crossing
-            # (3/20) * x + y - 1250 > 0
-            # (3/2 ) * x - y - 750  > 0
-            if (bb[0] * 3 / 20 + bb[1] - 1250 > 0) and (bb[0] * 3 / 2 - bb[0] - 750 > 0):
+            # (3/20) * x + y - 735 > 0
+            # (3/2 ) * x - y - 750 < 0
+            if (bb[0] * 3 / 20 + bb[1] - 735 > 0) and (bb[0] * 3 / 2 - bb[0] - 750 < 0):
                 cros.append(1)  # crossing
             else:
                 cros.append(0)  # not crossing
@@ -236,6 +236,7 @@ def update_dicts(list_of_same_ids, detection_results, frames_ped_veh, height_fac
     keys_to_deal = ['frames', 'bboxes', 'joints_3d']
     if treat_cam:
         keys_to_deal.append('pred_cam')
+    list_of_same_ids = list(sorted(set(list_of_same_ids)))
     ref_id = list_of_same_ids[0]
 
     if ref_id not in detection_results:
@@ -356,16 +357,39 @@ if __name__ == "__main__":
             with open(filename, 'rb') as handle:
                 detections = pickle.load(handle)
             base_name = video_dir.split('/')[-2]
-            annotation_pedest = pd.read_excel(os.path.join('data_annotation', base_name + '_pedestrian.xlsx'))
-            annotation_signal = pd.read_excel(os.path.join('data_annotation', base_name + '_signal.xlsx'))
-            
+
+            annotation_file_pedest = os.path.join('data_annotation', base_name + '_pedestrian.xlsx')
+            annotation_file_signal = os.path.join('data_annotation', base_name + '_signal.xlsx')
+            if os.path.isfile(annotation_file_pedest) and os.path.isfile(annotation_file_signal):
+                annotation_pedest = pd.read_excel(annotation_file_pedest)
+                annotation_signal = pd.read_excel(annotation_file_signal)
+            else:
+                continue
+
             signals = []
             for row in annotation_signal.iterrows():
                 signals.append((row[1]['frame'], row[1]['signal_phase']))
             
             pedestrian_list = []
             for row in annotation_pedest.iterrows():
-                temp_list = [int(single) for single in row[1]['p_id_match'].replace('.', ',').split(',') if single is not '']
-                pedestrian_list.append(temp_list)
+                temp_list = [int(single) for single in str(row[1]['p_id_match']).replace('.', ',').split(',') if single is not '' and single != 'nan']
+                if len(temp_list) > 0:
+                    pedestrian_list.append(temp_list)
 
             update_all_and_save(pedestrian_list, detections, signals, base_name)
+
+            if not os.path.exists('./data_annotation_processed'):
+                os.makedirs('./data_annotation_processed')
+            
+            if not os.path.exists('./data_csv'):
+                os.makedirs('./data_csv')
+
+            os.rename(
+                os.path.join('data_annotation', base_name + '_pedestrian.xlsx'),
+                os.path.join('data_annotation_processed', base_name + '_pedestrian.xlsx')
+            )
+            os.rename(
+                os.path.join('data_annotation', base_name + '_signal.xlsx'),
+                os.path.join('data_annotation_processed', base_name + '_signal.xlsx')
+            )
+        

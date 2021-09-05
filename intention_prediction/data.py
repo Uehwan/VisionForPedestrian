@@ -52,17 +52,18 @@ class PedestrianDataset(Dataset):
                 
                 if int(curr_row['frame']) < f_boundary:
                     # gather instances within the time context
-                    curr_vec = np.nan_to_num(curr_row.values[4:])
-                    curr_vec[-2] /= 50
+                    curr_vec = np.nan_to_num(curr_row.values[3:])
+                    curr_vec[-3] /= 50  # to encode the semantics of ped's locations
                     if not self.state_info:
                         curr_vec = curr_vec[:-1]
                     if self.transformer_input:
-                        curr_vec = np.concatenate((curr_vec, np.zeros(52-curr_vec.shape[0])))
+                        curr_vec = np.concatenate((curr_vec, np.zeros(16-curr_vec.shape[0])))
                     temp_inst.append(curr_vec)
                 else:
                     # now the buffer is full, let's retrieve a label stamp
                     if len(temp_inst) >= self.num_to_sample:    
                         # enough context as an instance
+                        # otherwise, too few samples as an instance
                         temp_idx = idx + 1
                         while(temp_idx < len(one_csv) and temp_idx < max(stamp_ranges[-1])):
                             temp_row = one_csv.iloc[temp_idx]

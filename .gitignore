@@ -143,3 +143,5 @@ data_annotation
 data_pickle
 data_raw
 data_csv
+intention_prediction/data_raw
+intention_prediction/data_raw_backup
